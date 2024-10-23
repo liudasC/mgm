@@ -1,5 +1,5 @@
 "use client";
-import { FC, useState } from "react";
+import { FC, MouseEvent, useState, useEffect, useRef } from "react";
 
 export default function Home() {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -25,9 +25,37 @@ export default function Home() {
   }
 
   const Dialog: FC<DialogProps> = ({ closeDialog }) => {
+    const dialogRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          closeDialog();
+        }
+      };
+      document.addEventListener("keydown", handleKeyDown);
+
+      return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [closeDialog]);
+
+    const handleBackdropClick = (event: MouseEvent) => {
+      if (
+        dialogRef.current &&
+        !dialogRef.current.contains(event.target as Node)
+      ) {
+        closeDialog();
+      }
+    };
+
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
-        <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+      <div
+        className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50"
+        onClick={handleBackdropClick}
+      >
+        <div
+          ref={dialogRef}
+          className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full"
+        >
           <h2 className="text-xl font-bold mb-4">Dialog Title</h2>
           <p className="mb-4">
             Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia ea
