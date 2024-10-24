@@ -6,8 +6,9 @@ import Card from "./components/Card";
 import Spinner from "./components/Spinner";
 import Item from "./components/Item";
 
+// for easier testing purposes used constant, instead of fetching ItemsCount for whole list
+const ItemsCount = 500; 
 const count = 20;
-const ItemsCount = 10;
 
 export default function Home() {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -15,7 +16,6 @@ export default function Home() {
   const [startIndex, setStartIndex] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [catImageUrl, setCatImageUrl] = useState<string>("");
-
 
   const handleDeleteItem = (idToDelete: number) => {
     setData((prevData) => prevData.filter((item) => item.id !== idToDelete));
@@ -108,8 +108,13 @@ export default function Home() {
                   </a>
                 </li>
               </ul>
+            <button
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          onClick={() => fetchItems(true)}
+        >
+          Fetch full list
+        </button>
             </div>
-
             <ul
               className="max-h-96 overflow-y-auto border border-gray-300 p-2 flex-1"
               onScroll={handleScroll}
@@ -130,31 +135,36 @@ export default function Home() {
     );
   };
 
-  useEffect(() => {
-    const fetchedData = async () => {
-      setIsLoading(true);
-      const fetchedData = await fetchData(startIndex, count);
-      setData(fetchedData);
-      setStartIndex(startIndex + count);
-      setIsLoading(false);
-    };
-    fetchedData();
-  }, []);
-
   const handleScroll = (event: UIEvent<HTMLElement>) => {
     const element = event.currentTarget;
     if (element.scrollHeight - element.scrollTop === element.clientHeight) {
-      fetchNextItems();
+      fetchItems();
     }
   };
 
-  const fetchNextItems = async () => {
+  const fetchItems = async (isFullList?: boolean) => {
+    if (isLoading) return; 
     setIsLoading(true);
-    const fetched = await fetchData(startIndex, count);
-    setData((prevData) => [...prevData, ...fetched]);
-    setStartIndex(startIndex + count);
-    setIsLoading(false);
+    try {
+      if (isFullList) {
+        const fetchedData = await fetchData(0, ItemsCount);
+        setData(fetchedData);
+        setStartIndex(0);
+      } else if (data.length !== ItemsCount) {
+        const fetchedData = await fetchData(startIndex, count);
+        setData((prevData) => [...prevData, ...fetchedData]);
+        setStartIndex(startIndex + count);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchItems()
+  }, []);
 
   return (
     <main className="flex flex-col min-h-screen p-8 pb-64">
