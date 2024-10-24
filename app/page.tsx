@@ -1,8 +1,14 @@
 "use client";
-import { FC, MouseEvent, useState, useEffect, useRef } from "react";
+import { FC, MouseEvent, useState, useEffect, useRef, UIEvent } from "react";
+import { fetchData } from "./api";
+import { DefaultData } from "./types";
+
+const step = 20;
 
 export default function Home() {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const [data, setData] = useState<DefaultData[]>([]);
+  const [startIndex, setStartIndex] = useState<number>(0);
 
   const Card: FC = () => {
     return (
@@ -20,11 +26,29 @@ export default function Home() {
     );
   };
 
-  interface DialogProps {
-    closeDialog: () => void;
-  }
+  const handleDeleteItem = (itemToDelete: string) => {
+    setData((prevData) => prevData.filter((item) => item !== itemToDelete));
+  };
 
-  const Dialog: FC<DialogProps> = ({ closeDialog }) => {
+  const Item: FC<{ item: string; onDelete: (item: string) => void }> = ({
+    item,
+    onDelete,
+  }) => {
+    return (
+      <li className="flex justify-between py-1">
+        <span>{item}</span>
+        <button
+          className="text-red-500 hover:text-red-600 border border-transparent hover:border-red-500 px-2 py-1 rounded focus:outline-none"
+          onClick={() => onDelete(item)}
+          aria-label={`Delete ${item}`}
+        >
+          X
+        </button>
+      </li>
+    );
+  };
+
+  const Dialog: FC<{ closeDialog: () => void }> = ({ closeDialog }) => {
     const dialogRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -56,49 +80,86 @@ export default function Home() {
           ref={dialogRef}
           className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full"
         >
-          <h2 className="text-xl font-bold mb-4">Dialog Title</h2>
-          <p className="mb-4">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Mollitia ea
-            eaque sapiente reprehenderit sequi aliquid ipsam dolores laboriosam
-            laudantium voluptatibus.
-          </p>
+          <div className="flex justify-between items-start mb-4">
+            <h2 className="text-xl font-bold">Dialog Title</h2>
+            <button
+              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+              onClick={closeDialog}
+            >
+              Close
+            </button>
+          </div>
 
-          <ul className="mb-4 space-y-2">
-            <li>
-              <a
-                href="#"
-                className="text-blue-500 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                Link 1
-              </a>
-            </li>
-            <li>
-              <a
-                href="#"
-                className="text-blue-500 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                Link 2
-              </a>
-            </li>
-            <li>
-              <a
-                href="#"
-                className="text-blue-500 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                Link 3
-              </a>
-            </li>
-          </ul>
+          <div className="flex space-x-4">
+            <div className="flex-1">
+              <p className="mb-4">
+                Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                Mollitia ea eaque sapiente reprehenderit sequi aliquid ipsam
+                dolores laboriosam laudantium voluptatibus.
+              </p>
 
-          <button
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-            onClick={closeDialog}
-          >
-            Close
-          </button>
+              <ul className="mb-4 space-y-2">
+                <li>
+                  <a
+                    href="#"
+                    className="text-blue-500 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    Link 1
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="text-blue-500 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    Link 2
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="text-blue-500 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    Link 3
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <ul
+              className="max-h-96 overflow-y-auto border border-gray-300 p-2 flex-1"
+              onScroll={handleScroll}
+            >
+              {data.map((item) => (
+                <Item key={item} item={item} onDelete={handleDeleteItem} />
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
     );
+  };
+
+  useEffect(() => {
+    const fetchedData = async () => {
+      const fetchedData = await fetchData(startIndex, step);
+      setData(fetchedData);
+      setStartIndex(startIndex + step);
+    };
+    fetchedData();
+  }, []);
+
+  const handleScroll = (event: UIEvent<HTMLElement>) => {
+    const element = event.currentTarget;
+    if (element.scrollHeight - element.scrollTop === element.clientHeight) {
+      fetchNextItems();
+    }
+  };
+
+  const fetchNextItems = async () => {
+    const fetched = await fetchData(startIndex, step);
+    setData((prevData) => [...prevData, ...fetched]);
+    setStartIndex(startIndex + step);
   };
 
   return (
