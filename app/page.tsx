@@ -2,9 +2,12 @@
 import { FC, MouseEvent, useState, useEffect, useRef, UIEvent } from "react";
 import { fetchData, fetchCatImage } from "./api";
 import { ItemType } from "./types";
+import Card from "./components/Card";
+import Spinner from "./components/Spinner";
+import Item from "./components/Item";
 
 const count = 20;
-const ItemsCount = 500;
+const ItemsCount = 10;
 
 export default function Home() {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -13,21 +16,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [catImageUrl, setCatImageUrl] = useState<string>("");
 
-  const Card: FC = () => {
-    return (
-      <div className="max-w-sm p-6 bg-white shadow-md rounded-lg">
-        <h2 className="text-2xl font-bold">Card Header</h2>
-        <p className="mt-2 text-gray-600">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Soluta veniam
-          facere nesciunt magnam minima, quaerat cum odio quidem expedita,
-          perspiciatis provident, natus rerum nisi itaque voluptates esse
-          doloremque recusandae laudantium corrupti ipsum quia adipisci culpa
-          modi! Amet impedit minima expedita assumenda optio, omnis molestiae
-          neque natus officiis voluptatum commodi atque!
-        </p>
-      </div>
-    );
-  };
 
   const handleDeleteItem = (idToDelete: number) => {
     setData((prevData) => prevData.filter((item) => item.id !== idToDelete));
@@ -41,24 +29,6 @@ export default function Home() {
     const fetchedCatImage = await fetchCatImage();
     setCatImageUrl(fetchedCatImage);
     setIsLoading(false);
-  };
-
-  const Item: FC<{ item: ItemType; onDelete: (id: number) => void }> = ({
-    item,
-    onDelete,
-  }) => {
-    return (
-      <li className="flex justify-between py-1">
-        <span>{item.name}</span>
-        <button
-          className="text-red-500 hover:text-red-600 border border-transparent hover:border-red-500 px-2 py-1 rounded focus:outline-none"
-          onClick={() => onDelete(item.id)}
-          aria-label={`Delete ${item.name}`}
-        >
-          X
-        </button>
-      </li>
-    );
   };
 
   const Dialog: FC<{ closeDialog: () => void }> = ({ closeDialog }) => {
@@ -95,6 +65,7 @@ export default function Home() {
         >
           <div className="flex justify-between items-start mb-4">
             <h2 className="text-xl font-bold">Dialog Title</h2>
+            {isLoading && <Spinner />}
             <button
               className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
               onClick={closeDialog}
@@ -161,9 +132,11 @@ export default function Home() {
 
   useEffect(() => {
     const fetchedData = async () => {
+      setIsLoading(true);
       const fetchedData = await fetchData(startIndex, count);
       setData(fetchedData);
       setStartIndex(startIndex + count);
+      setIsLoading(false);
     };
     fetchedData();
   }, []);
@@ -176,9 +149,11 @@ export default function Home() {
   };
 
   const fetchNextItems = async () => {
+    setIsLoading(true);
     const fetched = await fetchData(startIndex, count);
     setData((prevData) => [...prevData, ...fetched]);
     setStartIndex(startIndex + count);
+    setIsLoading(false);
   };
 
   return (
