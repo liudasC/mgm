@@ -8,10 +8,14 @@ const defaultData: ItemType[] = Array.from({ length: 500 }, (_, index) => ({
 export const fetchData = (
   startIndex: number,
   count: number
-): Promise<ItemType[]> => {
+): Promise<{ data: ItemType[]; total: number }> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve(defaultData.slice(startIndex, startIndex + count));
+      const slicedData = defaultData.slice(startIndex, startIndex + count);
+      resolve({
+        data: slicedData, 
+        total: defaultData.length, 
+      });
     }, 1000);
   });
 };

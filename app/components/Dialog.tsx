@@ -11,15 +11,15 @@ import Item from "../components/Item";
 import { fetchData, fetchCatImage } from "../api";
 import { ItemType } from "../types";
 
-// for easier testing purposes used constant, instead of fetching ItemsCount for whole list
-const ItemsCount = 500;
 const count = 20;
 
 const Dialog: FC<{ closeDialog: () => void }> = ({ closeDialog }) => {
   const [data, setData] = useState<ItemType[]>([]);
+  const [ItemsCount, setItemsCount] = useState<number>(count);
   const [startIndex, setStartIndex] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [catImageUrl, setCatImageUrl] = useState<string>("");
+  const [isVisible, setIsVisible] = useState<boolean>(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const handleDeleteItem = (idToDelete: number) => {
@@ -35,6 +35,7 @@ const Dialog: FC<{ closeDialog: () => void }> = ({ closeDialog }) => {
     setCatImageUrl(fetchedCatImage);
     setIsLoading(false);
   };
+
   const handleScroll = (event: UIEvent<HTMLElement>) => {
     const element = event.currentTarget;
     if (element.scrollHeight - element.scrollTop === element.clientHeight) {
@@ -48,11 +49,13 @@ const Dialog: FC<{ closeDialog: () => void }> = ({ closeDialog }) => {
     try {
       if (isFullList) {
         const fetchedData = await fetchData(0, ItemsCount);
-        setData(fetchedData);
+        setData(fetchedData.data);
+        setItemsCount(fetchedData.total);
         setStartIndex(0);
       } else if (data.length !== ItemsCount) {
         const fetchedData = await fetchData(startIndex, count);
-        setData((prevData) => [...prevData, ...fetchedData]);
+        setData((prevData) => [...prevData, ...fetchedData.data]);
+        setItemsCount(fetchedData.total);
         setStartIndex(startIndex + count);
       }
     } catch (error) {
@@ -67,18 +70,21 @@ const Dialog: FC<{ closeDialog: () => void }> = ({ closeDialog }) => {
       dialogRef.current &&
       !dialogRef.current.contains(event.target as Node)
     ) {
-      closeDialog();
+      setIsVisible(false);
+      setTimeout(closeDialog, 500);
     }
   };
 
   useEffect(() => {
+    setIsVisible(true);
     fetchItems();
   }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        closeDialog();
+        setIsVisible(false);
+        setTimeout(closeDialog, 500);
       }
     };
     document.addEventListener("keydown", handleKeyDown);
@@ -88,19 +94,23 @@ const Dialog: FC<{ closeDialog: () => void }> = ({ closeDialog }) => {
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50"
+      className={`fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 transition-opacity duration-500 ${
+        isVisible ? "opacity-100" : "opacity-0"
+      }`}
       onClick={handleBackdropClick}
     >
       <div
         ref={dialogRef}
-        className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full"
+        className={`bg-white p-6 rounded-lg shadow-lg max-w-lg w-full transform transition-transform duration-500 ${
+          isVisible ? "scale-100" : "scale-95"
+        }`}
       >
         <div className="flex justify-between items-start mb-4">
           <h2 className="text-xl font-bold">Dialog Title</h2>
           {isLoading && <Spinner />}
           <button
             className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-            onClick={closeDialog}
+            onClick={() => setIsVisible(false)}
           >
             Close
           </button>
