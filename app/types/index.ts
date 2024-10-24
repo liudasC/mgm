@@ -1,1 +1,4 @@
-export type DefaultData = string;
+export interface ItemType {
+    id: number;
+    name: string;
+  }

@@ -1,14 +1,17 @@
 "use client";
 import { FC, MouseEvent, useState, useEffect, useRef, UIEvent } from "react";
-import { fetchData } from "./api";
-import { DefaultData } from "./types";
+import { fetchData, fetchCatImage } from "./api";
+import { ItemType } from "./types";
 
-const step = 20;
+const count = 20;
+const ItemsCount = 500;
 
 export default function Home() {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  const [data, setData] = useState<DefaultData[]>([]);
+  const [data, setData] = useState<ItemType[]>([]);
   const [startIndex, setStartIndex] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [catImageUrl, setCatImageUrl] = useState<string>("");
 
   const Card: FC = () => {
     return (
@@ -26,21 +29,31 @@ export default function Home() {
     );
   };
 
-  const handleDeleteItem = (itemToDelete: string) => {
-    setData((prevData) => prevData.filter((item) => item !== itemToDelete));
+  const handleDeleteItem = (idToDelete: number) => {
+    setData((prevData) => prevData.filter((item) => item.id !== idToDelete));
+    if (idToDelete === ItemsCount - 1) {
+      fetchedCatImage();
+    }
   };
 
-  const Item: FC<{ item: string; onDelete: (item: string) => void }> = ({
+  const fetchedCatImage = async () => {
+    setIsLoading(true);
+    const fetchedCatImage = await fetchCatImage();
+    setCatImageUrl(fetchedCatImage);
+    setIsLoading(false);
+  };
+
+  const Item: FC<{ item: ItemType; onDelete: (id: number) => void }> = ({
     item,
     onDelete,
   }) => {
     return (
       <li className="flex justify-between py-1">
-        <span>{item}</span>
+        <span>{item.name}</span>
         <button
           className="text-red-500 hover:text-red-600 border border-transparent hover:border-red-500 px-2 py-1 rounded focus:outline-none"
-          onClick={() => onDelete(item)}
-          aria-label={`Delete ${item}`}
+          onClick={() => onDelete(item.id)}
+          aria-label={`Delete ${item.name}`}
         >
           X
         </button>
@@ -131,10 +144,16 @@ export default function Home() {
               onScroll={handleScroll}
             >
               {data.map((item) => (
-                <Item key={item} item={item} onDelete={handleDeleteItem} />
+                <Item key={item.id} item={item} onDelete={handleDeleteItem} />
               ))}
             </ul>
           </div>
+          {catImageUrl && (
+            <div className="flex flex-col items-center">
+              <img src={catImageUrl} alt="A cat" className="my-4 rounded" />
+              <span>You've deleted the last item!</span>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -142,9 +161,9 @@ export default function Home() {
 
   useEffect(() => {
     const fetchedData = async () => {
-      const fetchedData = await fetchData(startIndex, step);
+      const fetchedData = await fetchData(startIndex, count);
       setData(fetchedData);
-      setStartIndex(startIndex + step);
+      setStartIndex(startIndex + count);
     };
     fetchedData();
   }, []);
@@ -157,9 +176,9 @@ export default function Home() {
   };
 
   const fetchNextItems = async () => {
-    const fetched = await fetchData(startIndex, step);
+    const fetched = await fetchData(startIndex, count);
     setData((prevData) => [...prevData, ...fetched]);
-    setStartIndex(startIndex + step);
+    setStartIndex(startIndex + count);
   };
 
   return (
